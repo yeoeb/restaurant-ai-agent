@@ -19,7 +19,7 @@ def _json_error(message: str, detail: str | None = None) -> str:
 def _status_label(status: str) -> str:
     if status == "current":
         return "待處理"
-
+    
     return "已完成／歷史訂單"
 
 

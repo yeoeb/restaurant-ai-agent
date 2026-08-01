@@ -3,9 +3,12 @@ from typing import Any
 
 from ollama import ChatResponse, ResponseError, chat
 
-from mysql.connector import Error
+from restaurant_tools import (
+    get_daily_sales_summary,
+    get_menu_items,
+    get_order_status,
+)
 
-from database import get_connection
 
 MODEL_NAME = "qwen3:1.7b"
 
