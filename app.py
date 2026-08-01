@@ -7,95 +7,18 @@ from mysql.connector import Error
 
 from database import get_connection
 
-MODEL_NAME = "qwen3:4b"
+MODEL_NAME = "qwen3:1.7b"
 
-MENU_ITEMS = [
-    {"id": 1, "name": "滷肉飯", "price": 55},
-    {"id": 2, "name": "雞肉飯", "price": 70},
-    {"id": 3, "name": "水餃", "price": 80},
-    {"id": 4, "name": "牛肉麵", "price": 120},
-    {"id": 5, "name": "雞排飯", "price": 130},
-]
-
-
-def get_menu_items(max_price: float) -> str:
-    """查詢價格不超過指定預算的真實菜單。
-
-    Args:
-        max_price: 使用者能接受的最高價格。
-
-    Returns:
-        符合預算的菜單 JSON 字串。
-    """
-
-    if max_price < 0:
-        return json.dumps(
-            {"error": "預算不能小於 0"},
-            ensure_ascii=False,
-        )
-
-    connection = None
-    cursor = None
-
-    try:
-        connection = get_connection()
-
-        cursor = connection.cursor(dictionary=True)
-
-        sql = """
-            SELECT id, name, description, price
-            FROM menu_items
-            WHERE price <= %s
-            ORDER BY price ASC, id ASC
-        """
-
-        cursor.execute(sql, (max_price,))
-        rows = cursor.fetchall()
-
-        # MySQL DECIMAL 無法直接轉成 JSON，先轉為 float
-        menu_items = [
-            {
-                "id": row["id"],
-                "name": row["name"],
-                "description": row["description"],
-                "price": float(row["price"]),
-            }
-            for row in rows
-        ]
-
-        print(
-            f"\n[工具執行] get_menu_items(max_price={max_price})"
-        )
-        print(
-            f"[資料庫結果] 找到 {len(menu_items)} 個餐點"
-        )
-
-        return json.dumps(
-            menu_items,
-            ensure_ascii=False,
-        )
-
-    except Error as error:
-        print(f"[資料庫錯誤] {error}")
-
-        return json.dumps(
-            {
-                "error": "無法查詢菜單資料",
-                "detail": str(error),
-            },
-            ensure_ascii=False,
-        )
-
-    finally:
-        if cursor is not None:
-            cursor.close()
-
-        if connection is not None and connection.is_connected():
-            connection.close()
-
+from restaurant_tools import (
+    get_daily_sales_summary,
+    get_menu_items,
+    get_order_status,
+)
 
 AVAILABLE_FUNCTIONS = {
     "get_menu_items": get_menu_items,
+    "get_order_status": get_order_status,
+    "get_daily_sales_summary": get_daily_sales_summary,
 }
 
 
@@ -141,12 +64,21 @@ def run_agent(user_input: str) -> str:
         {
             "role": "system",
             "content": (
-                "你是一位餐廳菜單助理。"
+                "你是餐廳營運 AI 助理。"
                 "請一律使用繁體中文回答。"
-                "當使用者詢問菜單、餐點、價格或預算推薦時，"
-                "必須呼叫 get_menu_items 工具。"
-                "只能根據工具結果回答，禁止自行編造餐點或價格。"
-                "若查不到符合條件的餐點，請直接告知使用者。"
+
+                "使用者詢問菜單、餐點、價格或預算時，"
+                "必須呼叫 get_menu_items。"
+
+                "使用者詢問某筆訂單時，"
+                "必須呼叫 get_order_status。"
+
+                "使用者詢問某一天的訂單數、營業額、"
+                "待處理訂單或熱銷餐點時，"
+                "必須呼叫 get_daily_sales_summary。"
+
+                "只能根據工具結果回答，禁止編造資料。"
+                "缺少訂單 ID 或日期時，請要求使用者補充。"
             ),
         },
         {
@@ -160,7 +92,11 @@ def run_agent(user_input: str) -> str:
         response: ChatResponse = chat(
             model=MODEL_NAME,
             messages=messages,
-            tools=[get_menu_items],
+            tools=[
+                get_menu_items,
+                get_order_status,
+                get_daily_sales_summary,
+            ],
             think=False,
         )
 
