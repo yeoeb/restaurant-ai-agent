@@ -53,25 +53,91 @@ User
 
 ## Installation
 
-1. Install Python, Ollama and MySQL.
-2. Download the model:
-    ```bash
-    ollama pull qwen3:1.7b
-3. Create and activate the virtual environment.
-4. Install dependencies:
-    pip install -r requirements.txt
-5. Copy .env.example to .env.
-6. Configure the MySQL connection.
-7. Start the application
-    streamlit run streamlit_app.py
-Security
-    Database credentials are excluded through .gitignore.
-    SQL queries use parameterized values.
-    The current Agent only performs read operations.
-    The model cannot execute arbitrary SQL.
+### 1. Install prerequisites
+
+- Python 3.10 or later
+- Ollama
+- MySQL
+
+### 2. Clone the repository
+
+```bash
+git clone <repository-url>
+cd restaurant-ai-agent
+```
+
+### 3. Create a virtual environment
+
+```bash
+python -m venv .venv
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+### 4. Install dependencies
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### 5. Download the local model
+
+```bash
+ollama pull qwen3:1.7b
+```
+
+### 6. Configure the database
+
+Copy `.env.example` to `.env` and update the values:
+
+```env
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=cbb109110
+```
+
+Import:
+
+```text
+database/schema.sql
+```
+
+into MySQL.
+
+### 7. Start the application
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Open:
+
+```text
+http://localhost:8501
+```
+## Security
+
+- Database credentials are stored in `.env`.
+- `.env` is excluded through `.gitignore`.
+- SQL queries use parameterized values.
+- The Agent only exposes predefined read-only tools.
+- The language model cannot execute arbitrary SQL.
+
+## Testing
+
+Manual tool-selection test cases are documented in:
+
+```text
+tests/test-cases.md
 Known Limitations
-    Requires Ollama and MySQL to run locally.
-    Does not currently support order modification.
-    Responses depend on the selected local model.
-    Automated tests have not yet been implemented.
+-Ollama and MySQL must be running locally.
+-The project does not currently include write operations.
+-Test cases are currently manual rather than automated.
+-Each question is processed independently and does not yet use the previous conversation as Agent context.
 Import `database/schema.sql` into MySQL before starting the application.
